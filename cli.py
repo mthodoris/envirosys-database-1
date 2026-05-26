@@ -286,6 +286,7 @@ def remove_station(conn):
         print("  Cancelled.")
         return
 
+    conn.execute("UPDATE instruments SET station_id = NULL WHERE station_id = ?", (s["id"],))
     conn.execute("DELETE FROM stations WHERE id = ?", (s["id"],))
     conn.commit()
     print(f"  ✓ Station '{s['name']}' removed.")
