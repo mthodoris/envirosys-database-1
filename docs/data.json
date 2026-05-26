@@ -92,6 +92,190 @@
     ]
   },
   {
+    "station": "MAM13",
+    "location": "Neochori",
+    "notes": "",
+    "instruments": [
+      {
+        "model": "APMA",
+        "pollutant": "CO",
+        "serial_number": "SN-APMA-MAM13",
+        "installed_date": "2026-05-26",
+        "cal_high_date": null,
+        "cal_low_date": null,
+        "part1": null,
+        "part2": null,
+        "part3": null,
+        "part4": null,
+        "notes": null
+      },
+      {
+        "model": "APNA",
+        "pollutant": "NOx",
+        "serial_number": "SN-APNA-MAM13",
+        "installed_date": "2026-05-26",
+        "cal_high_date": null,
+        "cal_low_date": null,
+        "part1": null,
+        "part2": null,
+        "part3": null,
+        "part4": null,
+        "notes": null
+      },
+      {
+        "model": "APSA",
+        "pollutant": "SO2",
+        "serial_number": "SN-APSA-MAM13",
+        "installed_date": "2026-05-26",
+        "cal_high_date": null,
+        "cal_low_date": null,
+        "part1": null,
+        "part2": null,
+        "part3": null,
+        "part4": null,
+        "notes": null
+      }
+    ]
+  },
+  {
+    "station": "MAM14",
+    "location": "Palaiochori",
+    "notes": "",
+    "instruments": [
+      {
+        "model": "APMA",
+        "pollutant": "CO",
+        "serial_number": "SN-APMA-MAM14",
+        "installed_date": "2026-05-26",
+        "cal_high_date": null,
+        "cal_low_date": null,
+        "part1": null,
+        "part2": null,
+        "part3": null,
+        "part4": null,
+        "notes": null
+      },
+      {
+        "model": "APNA",
+        "pollutant": "NOx",
+        "serial_number": "SN-APNA-MAM14",
+        "installed_date": "2026-05-26",
+        "cal_high_date": null,
+        "cal_low_date": null,
+        "part1": null,
+        "part2": null,
+        "part3": null,
+        "part4": null,
+        "notes": null
+      },
+      {
+        "model": "APSA",
+        "pollutant": "SO2",
+        "serial_number": "SN-APSA-MAM14",
+        "installed_date": "2026-05-26",
+        "cal_high_date": null,
+        "cal_low_date": null,
+        "part1": null,
+        "part2": null,
+        "part3": null,
+        "part4": null,
+        "notes": null
+      }
+    ]
+  },
+  {
+    "station": "MAM15",
+    "location": "Stageira",
+    "notes": "",
+    "instruments": [
+      {
+        "model": "APMA",
+        "pollutant": "CO",
+        "serial_number": "SN-APMA-MAM15",
+        "installed_date": "2026-05-26",
+        "cal_high_date": null,
+        "cal_low_date": null,
+        "part1": null,
+        "part2": null,
+        "part3": null,
+        "part4": null,
+        "notes": null
+      },
+      {
+        "model": "APNA",
+        "pollutant": "NOx",
+        "serial_number": "SN-APNA-MAM15",
+        "installed_date": "2026-05-26",
+        "cal_high_date": null,
+        "cal_low_date": null,
+        "part1": null,
+        "part2": null,
+        "part3": null,
+        "part4": null,
+        "notes": null
+      },
+      {
+        "model": "APSA",
+        "pollutant": "SO2",
+        "serial_number": "SN-APSA-MAM15",
+        "installed_date": "2026-05-26",
+        "cal_high_date": null,
+        "cal_low_date": null,
+        "part1": null,
+        "part2": null,
+        "part3": null,
+        "part4": null,
+        "notes": null
+      }
+    ]
+  },
+  {
+    "station": "MAM16",
+    "location": "Olympiada",
+    "notes": "",
+    "instruments": [
+      {
+        "model": "APMA",
+        "pollutant": "CO",
+        "serial_number": "SN-APMA-MAM16",
+        "installed_date": "2026-05-26",
+        "cal_high_date": null,
+        "cal_low_date": null,
+        "part1": null,
+        "part2": null,
+        "part3": null,
+        "part4": null,
+        "notes": null
+      },
+      {
+        "model": "APNA",
+        "pollutant": "NOx",
+        "serial_number": "SN-APNA-MAM16",
+        "installed_date": "2026-05-26",
+        "cal_high_date": null,
+        "cal_low_date": null,
+        "part1": null,
+        "part2": null,
+        "part3": null,
+        "part4": null,
+        "notes": null
+      },
+      {
+        "model": "APSA",
+        "pollutant": "SO2",
+        "serial_number": "SN-APSA-MAM16",
+        "installed_date": "2026-05-26",
+        "cal_high_date": null,
+        "cal_low_date": null,
+        "part1": null,
+        "part2": null,
+        "part3": null,
+        "part4": null,
+        "notes": null
+      }
+    ]
+  },
+  {
     "station": "zosimaia ioannina",
     "location": "Ioannina",
     "notes": "",
