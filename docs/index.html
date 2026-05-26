@@ -294,11 +294,13 @@ function instRow(station, idx, i) {
     ["Installed",   i.installed_date],
     ["Cal. high",   i.cal_high_date],
     ["Cal. low",    i.cal_low_date],
-    parts.length ? ["Parts", parts.join(", ")] : null,
+    ["Parts",       parts.length ? parts.join(", ") : null],
     ["Notes",       i.notes],
-  ].filter(r => r && r[1]);
+  ];
 
-  const detail = rows.map(([l, v]) => `<tr><td>${l}</td><td>${esc(v)}</td></tr>`).join("");
+  const detail = rows.map(([l, v]) =>
+    `<tr><td>${l}</td><td>${v ? esc(v) : '<span style="color:#cbd5e1">—</span>'}</td></tr>`
+  ).join("");
 
   return `
     <div class="inst-row" id="i-${esc(station)}-${idx}">
