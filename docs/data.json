@@ -50,25 +50,5 @@
     "location": "Stratoniki",
     "notes": "",
     "instruments": []
-  },
-  {
-    "station": "Site A",
-    "location": "Stratoniki",
-    "notes": "",
-    "instruments": [
-      {
-        "model": "APNA",
-        "pollutant": "NOx",
-        "serial_number": "SN-001",
-        "installed_date": "2026-01-15",
-        "cal_high_date": "2026-03-10",
-        "cal_low_date": "2026-03-11",
-        "part1": "Pump A",
-        "part2": "Filter B",
-        "part3": null,
-        "part4": null,
-        "notes": null
-      }
-    ]
   }
 ]
