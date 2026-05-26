@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Environmental Instruments Database</title>
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --tag-nox: #fef9c3; --tag-nox-t: #854d0e;
+    --tag-co:  #dcfce7; --tag-co-t:  #166534;
+    --tag-so2: #fce7f3; --tag-so2-t: #9d174d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }
+
+  header {
+    background: var(--accent);
+    color: white;
+    padding: 1.5rem 2rem;
+  }
+  header h1 { font-size: 1.4rem; font-weight: 700; }
+  header p  { font-size: .9rem; opacity: .8; margin-top: .25rem; }
+
+  .toolbar {
+    padding: 1rem 2rem;
+    display: flex;
+    gap: .75rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .toolbar input {
+    flex: 1;
+    min-width: 200px;
+    padding: .5rem .9rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: .95rem;
+    background: white;
+    outline: none;
+  }
+  .toolbar input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+  .count { font-size: .85rem; color: var(--muted); white-space: nowrap; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1.25rem;
+    padding: 0 2rem 2rem;
+  }
+
+  .station-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    transition: box-shadow .15s;
+  }
+  .station-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+
+  .station-header {
+    padding: .9rem 1.1rem;
+    background: var(--accent);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+  }
+  .station-header h2 { font-size: 1.05rem; font-weight: 700; }
+  .station-header .loc { font-size: .8rem; opacity: .85; }
+  .station-header .chevron { transition: transform .2s; font-size: 1rem; }
+  .station-card.collapsed .chevron { transform: rotate(-90deg); }
+
+  .instruments { padding: .5rem 0; }
+  .station-card.collapsed .instruments { display: none; }
+
+  .inst-row {
+    padding: .6rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .inst-row:last-child { border-bottom: none; }
+  .inst-row:hover { background: var(--bg); }
+
+  .inst-top { display: flex; align-items: center; gap: .5rem; }
+  .tag {
+    font-size: .72rem;
+    font-weight: 700;
+    padding: .15rem .45rem;
+    border-radius: 999px;
+  }
+  .tag-NOx { background: var(--tag-nox); color: var(--tag-nox-t); }
+  .tag-CO  { background: var(--tag-co);  color: var(--tag-co-t);  }
+  .tag-SO2 { background: var(--tag-so2); color: var(--tag-so2-t); }
+
+  .inst-model { font-weight: 600; font-size: .95rem; }
+  .inst-sn    { font-size: .8rem; color: var(--muted); margin-left: auto; }
+
+  .inst-detail {
+    display: none;
+    margin-top: .5rem;
+    font-size: .82rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .inst-row.open .inst-detail { display: block; }
+  .inst-detail span { color: var(--text); font-weight: 500; }
+
+  .empty { padding: 3rem; text-align: center; color: var(--muted); grid-column: 1/-1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Environmental Instruments Database</h1>
+  <p>Monitoring stations and instrument inventory</p>
+</header>
+
+<div class="toolbar">
+  <input id="search" placeholder="Search station, location, model, serial number…" oninput="render()">
+  <span class="count" id="count"></span>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+let data = [];
+
+fetch("data.json")
+  .then(r => r.json())
+  .then(d => { data = d; render(); });
+
+function render() {
+  const q = document.getElementById("search").value.toLowerCase().trim();
+  const grid = document.getElementById("grid");
+
+  const filtered = data.filter(s => {
+    if (!q) return true;
+    const hay = [s.station, s.location, s.notes,
+      ...s.instruments.flatMap(i => [i.model, i.pollutant, i.serial_number,
+        i.part1, i.part2, i.part3, i.part4, i.notes])
+    ].join(" ").toLowerCase();
+    return hay.includes(q);
+  });
+
+  document.getElementById("count").textContent =
+    `${filtered.length} station${filtered.length !== 1 ? "s" : ""}`;
+
+  if (!filtered.length) {
+    grid.innerHTML = '<p class="empty">No results found.</p>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(s => `
+    <div class="station-card" id="s-${s.station}">
+      <div class="station-header" onclick="toggleStation('${s.station}')">
+        <div>
+          <h2>${esc(s.station)}</h2>
+          <div class="loc">${esc(s.location)}</div>
+        </div>
+        <span class="chevron">▾</span>
+      </div>
+      <div class="instruments">
+        ${s.instruments.length ? s.instruments.map((i,idx) => instRow(s.station, idx, i)).join("") : '<div style="padding:.8rem 1.1rem;color:#94a3b8;font-size:.85rem">No instruments assigned</div>'}
+      </div>
+    </div>
+  `).join("");
+}
+
+function instRow(station, idx, i) {
+  const parts = [i.part1, i.part2, i.part3, i.part4].filter(Boolean);
+  const rows = [
+    ["Installed",  i.installed_date],
+    ["Cal. high",  i.cal_high_date],
+    ["Cal. low",   i.cal_low_date],
+    parts.length ? ["Parts", parts.join(", ")] : null,
+    ["Notes",      i.notes],
+  ].filter(r => r && r[1]);
+
+  const detail = rows.length
+    ? rows.map(([l,v]) => `${l}: <span>${esc(v)}</span>`).join("<br>")
+    : "No additional details.";
+
+  return `
+    <div class="inst-row" id="i-${station}-${idx}" onclick="toggleInst('${station}',${idx})">
+      <div class="inst-top">
+        <span class="tag tag-${esc(i.pollutant)}">${esc(i.pollutant)}</span>
+        <span class="inst-model">${esc(i.model)}</span>
+        <span class="inst-sn">SN: ${esc(i.serial_number)}</span>
+      </div>
+      <div class="inst-detail">${detail}</div>
+    </div>`;
+}
+
+function toggleStation(name) {
+  document.getElementById("s-" + name).classList.toggle("collapsed");
+}
+
+function toggleInst(station, idx) {
+  document.getElementById(`i-${station}-${idx}`).classList.toggle("open");
+}
+
+function esc(s) {
+  if (!s) return "";
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+</script>
+</body>
+</html>
