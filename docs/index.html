@@ -14,6 +14,7 @@
     --text: #1e293b;
     --muted: #64748b;
     --border: #e2e8f0;
+    --loc-header: #1e40af;
     --tag-nox: #fef9c3; --tag-nox-t: #854d0e;
     --tag-co:  #dcfce7; --tag-co-t:  #166534;
     --tag-so2: #fce7f3; --tag-so2-t: #9d174d;
@@ -86,43 +87,62 @@
   .toolbar input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
   .count { font-size: .85rem; color: var(--muted); white-space: nowrap; }
 
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 1.25rem;
-    padding: 0 2rem 2rem;
-  }
+  /* ── location blocks ── */
+  .locations { padding: 0 2rem 2rem; display: flex; flex-direction: column; gap: 1.5rem; }
 
-  .station-card {
+  .loc-block {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0,0,0,.06);
-    transition: box-shadow .15s;
   }
-  .station-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.1); }
 
-  .station-header {
-    padding: .9rem 1.1rem;
-    background: var(--accent);
+  .loc-header {
+    background: var(--loc-header);
     color: white;
+    padding: .9rem 1.2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
     user-select: none;
   }
-  .station-header h2 { font-size: 1.05rem; font-weight: 700; }
-  .station-header .loc { font-size: .8rem; opacity: .85; }
-  .station-header .chevron { transition: transform .2s; font-size: 1rem; }
-  .station-card.collapsed .chevron { transform: rotate(-90deg); }
+  .loc-header h2 { font-size: 1.1rem; font-weight: 700; }
+  .loc-header .loc-notes { font-size: .8rem; opacity: .8; margin-top: .15rem; }
+  .loc-header .chevron { transition: transform .2s; font-size: 1rem; }
+  .loc-block.collapsed .chevron { transform: rotate(-90deg); }
+  .loc-block.collapsed .loc-body { display: none; }
 
-  .instruments { padding: .5rem 0; }
+  .loc-body { padding: .75rem 1rem; display: flex; flex-direction: column; gap: .75rem; }
+
+  /* ── station cards inside a location ── */
+  .station-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .station-header {
+    background: var(--accent-light);
+    color: var(--loc-header);
+    padding: .65rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    font-weight: 700;
+    font-size: .95rem;
+  }
+  .station-header .chevron { transition: transform .2s; font-size: .9rem; }
+  .station-card.collapsed .chevron { transform: rotate(-90deg); }
   .station-card.collapsed .instruments { display: none; }
 
+  .instruments { padding: .25rem 0; }
+
   .inst-row {
-    padding: .6rem 1.1rem;
+    padding: .6rem 1rem;
     border-bottom: 1px solid var(--border);
     cursor: pointer;
   }
@@ -140,7 +160,7 @@
   .tag-CO  { background: var(--tag-co);  color: var(--tag-co-t);  }
   .tag-SO2 { background: var(--tag-so2); color: var(--tag-so2-t); }
 
-  .inst-model { font-weight: 600; font-size: .95rem; }
+  .inst-model { font-weight: 600; font-size: .92rem; }
   .inst-sn    { font-size: .8rem; color: var(--muted); margin-left: auto; }
 
   .inst-detail {
@@ -153,7 +173,8 @@
   .inst-row.open .inst-detail { display: block; }
   .inst-detail span { color: var(--text); font-weight: 500; }
 
-  .empty { padding: 3rem; text-align: center; color: var(--muted); grid-column: 1/-1; }
+  .no-instruments { padding: .6rem 1rem; font-size: .85rem; color: #94a3b8; }
+  .empty { padding: 3rem; text-align: center; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -174,23 +195,16 @@
 </header>
 
 <div class="toolbar">
-  <input id="search" placeholder="Search station, location, model, serial number…" oninput="render()">
+  <input id="search" placeholder="Search location, station, model, serial number…" oninput="render()">
   <span class="count" id="count"></span>
 </div>
 
-<div class="grid" id="grid"></div>
+<div class="locations" id="locations"></div>
 </div>
 
 <script>
-netlifyIdentity.on("init", user => {
-  if (user) showApp();
-});
-
-netlifyIdentity.on("login", () => {
-  netlifyIdentity.close();
-  showApp();
-});
-
+netlifyIdentity.on("init", user => { if (user) showApp(); });
+netlifyIdentity.on("login", () => { netlifyIdentity.close(); showApp(); });
 netlifyIdentity.on("logout", () => {
   document.getElementById("app").style.display = "none";
   document.getElementById("login-gate").style.display = "flex";
@@ -205,14 +219,24 @@ function showApp() {
 let data = [];
 
 function loadData() {
-fetch("data.json")
-  .then(r => r.json())
-  .then(d => { data = d; render(); });
+  fetch("data.json")
+    .then(r => r.json())
+    .then(d => { data = d; render(); });
+}
+
+function groupByLocation(stations) {
+  const map = {};
+  for (const s of stations) {
+    const loc = s.location || "(no location)";
+    if (!map[loc]) map[loc] = [];
+    map[loc].push(s);
+  }
+  return map;
 }
 
 function render() {
   const q = document.getElementById("search").value.toLowerCase().trim();
-  const grid = document.getElementById("grid");
+  const container = document.getElementById("locations");
 
   const filtered = data.filter(s => {
     if (!q) return true;
@@ -223,46 +247,65 @@ function render() {
     return hay.includes(q);
   });
 
+  const grouped = groupByLocation(filtered);
+  const locNames = Object.keys(grouped).sort();
+
   document.getElementById("count").textContent =
-    `${filtered.length} station${filtered.length !== 1 ? "s" : ""}`;
+    `${locNames.length} location${locNames.length !== 1 ? "s" : ""}, ${filtered.length} station${filtered.length !== 1 ? "s" : ""}`;
 
   if (!filtered.length) {
-    grid.innerHTML = '<p class="empty">No results found.</p>';
+    container.innerHTML = '<p class="empty">No results found.</p>';
     return;
   }
 
-  grid.innerHTML = filtered.map(s => `
-    <div class="station-card" id="s-${s.station}">
-      <div class="station-header" onclick="toggleStation('${s.station}')">
-        <div>
-          <h2>${esc(s.station)}</h2>
-          <div class="loc">${esc(s.location)}</div>
+  container.innerHTML = locNames.map(loc => {
+    const stations = grouped[loc];
+    return `
+      <div class="loc-block" id="loc-${esc(loc)}">
+        <div class="loc-header" onclick="toggleLoc('${esc(loc)}')">
+          <div>
+            <h2>${esc(loc)}</h2>
+          </div>
+          <span class="chevron">▾</span>
         </div>
+        <div class="loc-body">
+          ${stations.map(s => stationCard(loc, s)).join("")}
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function stationCard(loc, s) {
+  const instruments = s.instruments.length
+    ? s.instruments.map((i, idx) => instRow(s.station, idx, i)).join("")
+    : '<div class="no-instruments">No instruments assigned</div>';
+
+  return `
+    <div class="station-card" id="s-${esc(s.station)}">
+      <div class="station-header" onclick="toggleStation('${esc(s.station)}')">
+        <span>${esc(s.station)}</span>
         <span class="chevron">▾</span>
       </div>
-      <div class="instruments">
-        ${s.instruments.length ? s.instruments.map((i,idx) => instRow(s.station, idx, i)).join("") : '<div style="padding:.8rem 1.1rem;color:#94a3b8;font-size:.85rem">No instruments assigned</div>'}
-      </div>
-    </div>
-  `).join("");
+      <div class="instruments">${instruments}</div>
+    </div>`;
 }
 
 function instRow(station, idx, i) {
   const parts = [i.part1, i.part2, i.part3, i.part4].filter(Boolean);
   const rows = [
-    ["Installed",  i.installed_date],
-    ["Cal. high",  i.cal_high_date],
-    ["Cal. low",   i.cal_low_date],
+    ["Installed", i.installed_date],
+    ["Cal. high", i.cal_high_date],
+    ["Cal. low",  i.cal_low_date],
     parts.length ? ["Parts", parts.join(", ")] : null,
-    ["Notes",      i.notes],
+    ["Notes",     i.notes],
   ].filter(r => r && r[1]);
 
   const detail = rows.length
-    ? rows.map(([l,v]) => `${l}: <span>${esc(v)}</span>`).join("<br>")
+    ? rows.map(([l, v]) => `${l}: <span>${esc(v)}</span>`).join("<br>")
     : "No additional details.";
 
   return `
-    <div class="inst-row" id="i-${station}-${idx}" onclick="toggleInst('${station}',${idx})">
+    <div class="inst-row" id="i-${esc(station)}-${idx}" onclick="toggleInst('${esc(station)}',${idx})">
       <div class="inst-top">
         <span class="tag tag-${esc(i.pollutant)}">${esc(i.pollutant)}</span>
         <span class="inst-model">${esc(i.model)}</span>
@@ -272,10 +315,12 @@ function instRow(station, idx, i) {
     </div>`;
 }
 
+function toggleLoc(name) {
+  document.getElementById("loc-" + name).classList.toggle("collapsed");
+}
 function toggleStation(name) {
   document.getElementById("s-" + name).classList.toggle("collapsed");
 }
-
 function toggleInst(station, idx) {
   document.getElementById(`i-${station}-${idx}`).classList.toggle("open");
 }
