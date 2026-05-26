@@ -71,7 +71,85 @@ def list_locations(conn):
         return
     for r in rows:
         note = f"  — {r['notes']}" if r["notes"] else ""
-        print(f"  [{r['id']}] {r['name']}{note}")
+        print(f"\n  [{r['id']}] {r['name']}{note}")
+        stations = conn.execute(
+            "SELECT * FROM stations WHERE location_id = ? ORDER BY name", (r["id"],)
+        ).fetchall()
+        if not stations:
+            print("    (no stations)")
+        for s in stations:
+            instruments = conn.execute("""
+                SELECT t.model, t.pollutant, i.serial_number
+                FROM instruments i
+                JOIN instrument_types t ON t.id = i.instrument_type_id
+                WHERE i.station_id = ?
+                ORDER BY t.model
+            """, (s["id"],)).fetchall()
+            print(f"    · Station: {s['name']}")
+            if instruments:
+                for inst in instruments:
+                    print(f"        {inst['model']} ({inst['pollutant']})  SN: {inst['serial_number']}")
+            else:
+                print("        (no instruments)")
+    print()
+
+
+def edit_location(conn):
+    hr()
+    print("EDIT LOCATION")
+    rows = conn.execute("SELECT * FROM locations ORDER BY name").fetchall()
+    if not rows:
+        print("  No locations yet.")
+        return
+    for i, r in enumerate(rows, 1):
+        print(f"    {i}. {r['name']}")
+    while True:
+        raw = input(f"  Choose 1–{len(rows)}: ").strip()
+        if raw.isdigit() and 1 <= int(raw) <= len(rows):
+            loc = rows[int(raw) - 1]
+            break
+        print("  Invalid choice.")
+
+    print("  (Press Enter to keep current value)\n")
+    new_name = input(f"  Name [{loc['name']}]: ").strip() or loc["name"]
+    new_notes = input(f"  Notes [{loc['notes'] or ''}]: ").strip()
+    new_notes = new_notes if new_notes else loc["notes"]
+
+    try:
+        conn.execute(
+            "UPDATE locations SET name = ?, notes = ? WHERE id = ?",
+            (new_name, new_notes, loc["id"]),
+        )
+        conn.commit()
+        print(f"  ✓ Location updated to '{new_name}'.")
+    except sqlite3.IntegrityError:
+        print(f"  A location named '{new_name}' already exists.")
+
+
+def remove_location(conn):
+    hr()
+    print("REMOVE LOCATION")
+    rows = conn.execute("SELECT * FROM locations ORDER BY name").fetchall()
+    if not rows:
+        print("  No locations yet.")
+        return
+    for i, r in enumerate(rows, 1):
+        print(f"    {i}. {r['name']}")
+    while True:
+        raw = input(f"  Choose 1–{len(rows)}: ").strip()
+        if raw.isdigit() and 1 <= int(raw) <= len(rows):
+            loc = rows[int(raw) - 1]
+            break
+        print("  Invalid choice.")
+
+    confirm = input(f"  Delete '{loc['name']}'? Stations using it will lose their location. [y/N]: ").strip().lower()
+    if confirm != "y":
+        print("  Cancelled.")
+        return
+
+    conn.execute("DELETE FROM locations WHERE id = ?", (loc["id"],))
+    conn.commit()
+    print(f"  ✓ Location '{loc['name']}' removed.")
 
 
 # ── stations ───────────────────────────────────────────────────────────────────
@@ -323,17 +401,70 @@ def move_instrument(conn):
     print("  ✓ Station updated.")
 
 
+# ── overview ───────────────────────────────────────────────────────────────────
+
+def overview(conn):
+    hr()
+    print("FULL OVERVIEW  (Locations → Stations → Instruments)\n")
+    locations = conn.execute("SELECT * FROM locations ORDER BY name").fetchall()
+    if not locations:
+        print("  No locations yet.")
+        return
+    for loc in locations:
+        note = f"  — {loc['notes']}" if loc["notes"] else ""
+        print(f"  LOCATION: {loc['name']}{note}")
+        stations = conn.execute(
+            "SELECT * FROM stations WHERE location_id = ? ORDER BY name", (loc["id"],)
+        ).fetchall()
+        if not stations:
+            print("    (no stations)")
+        for s in stations:
+            snote = f"  — {s['notes']}" if s["notes"] else ""
+            print(f"    STATION: {s['name']}{snote}")
+            instruments = conn.execute("""
+                SELECT t.model, t.pollutant, i.serial_number,
+                       i.installed_date, i.cal_high_date, i.cal_low_date,
+                       i.part1, i.part2, i.part3, i.part4, i.notes
+                FROM instruments i
+                JOIN instrument_types t ON t.id = i.instrument_type_id
+                WHERE i.station_id = ?
+                ORDER BY t.model
+            """, (s["id"],)).fetchall()
+            if not instruments:
+                print("      (no instruments)")
+            for inst in instruments:
+                parts = [inst[f"part{n}"] for n in range(1, 5) if inst[f"part{n}"]]
+                print(f"      [{inst['model']} · {inst['pollutant']}]  SN: {inst['serial_number']}")
+                if inst["installed_date"]:
+                    print(f"        Installed : {inst['installed_date']}")
+                if inst["cal_high_date"]:
+                    print(f"        Cal. high : {inst['cal_high_date']}")
+                if inst["cal_low_date"]:
+                    print(f"        Cal. low  : {inst['cal_low_date']}")
+                if parts:
+                    print(f"        Parts     : {', '.join(parts)}")
+                if inst["notes"]:
+                    print(f"        Notes     : {inst['notes']}")
+        print()
+
+
 # ── main menu ──────────────────────────────────────────────────────────────────
 
 MENU = [
-    ("List stations (with instruments)",  list_stations),
-    ("List all instruments (detail view)", list_instruments),
+    ("Overview (all locations → stations → instruments)", overview),
+    # ── locations ──
+    ("List locations",                     list_locations),
+    ("Add location",                       add_location),
+    ("Edit location",                      edit_location),
+    ("Remove location",                    remove_location),
+    # ── stations ──
+    ("List stations",                      list_stations),
     ("Add station",                        add_station),
+    # ── instruments ──
+    ("List instruments (detail view)",     list_instruments),
     ("Add instrument",                     add_instrument),
     ("Edit instrument",                    edit_instrument),
     ("Move instrument to another station", move_instrument),
-    ("List locations",                     list_locations),
-    ("Add location",                       add_location),
 ]
 
 

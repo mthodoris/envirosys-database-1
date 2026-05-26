@@ -46,8 +46,14 @@
     ]
   },
   {
+    "station": "MAM12",
+    "location": "Stratoniki",
+    "notes": "",
+    "instruments": []
+  },
+  {
     "station": "Site A",
-    "location": "Site A",
+    "location": "Stratoniki",
     "notes": "",
     "instruments": [
       {
