@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Environmental Instruments Database</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <style>
   :root {
     --bg: #f4f6f9;
@@ -20,13 +21,50 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }
 
+  #login-gate {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: var(--bg);
+  }
+  #login-gate h2 { font-size: 1.3rem; margin-bottom: .5rem; color: var(--text); }
+  #login-gate p  { color: var(--muted); margin-bottom: 1.5rem; }
+  #login-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: .7rem 2rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  #login-btn:hover { opacity: .9; }
+
+  #app { display: none; }
+
   header {
     background: var(--accent);
     color: white;
     padding: 1.5rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
   header h1 { font-size: 1.4rem; font-weight: 700; }
   header p  { font-size: .9rem; opacity: .8; margin-top: .25rem; }
+  #logout-btn {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.4);
+    padding: .4rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: .85rem;
+    white-space: nowrap;
+  }
+  #logout-btn:hover { background: rgba(255,255,255,0.3); }
 
   .toolbar {
     padding: 1rem 2rem;
@@ -120,9 +158,19 @@
 </head>
 <body>
 
+<div id="login-gate">
+  <h2>Environmental Instruments Database</h2>
+  <p>Sign in to access the instrument inventory</p>
+  <button id="login-btn" onclick="netlifyIdentity.open()">Sign in</button>
+</div>
+
+<div id="app">
 <header>
-  <h1>Environmental Instruments Database</h1>
-  <p>Monitoring stations and instrument inventory</p>
+  <div>
+    <h1>Environmental Instruments Database</h1>
+    <p>Monitoring stations and instrument inventory</p>
+  </div>
+  <button id="logout-btn" onclick="netlifyIdentity.logout()">Sign out</button>
 </header>
 
 <div class="toolbar">
@@ -131,13 +179,36 @@
 </div>
 
 <div class="grid" id="grid"></div>
+</div>
 
 <script>
+netlifyIdentity.on("init", user => {
+  if (user) showApp();
+});
+
+netlifyIdentity.on("login", () => {
+  netlifyIdentity.close();
+  showApp();
+});
+
+netlifyIdentity.on("logout", () => {
+  document.getElementById("app").style.display = "none";
+  document.getElementById("login-gate").style.display = "flex";
+});
+
+function showApp() {
+  document.getElementById("login-gate").style.display = "none";
+  document.getElementById("app").style.display = "block";
+  loadData();
+}
+
 let data = [];
 
+function loadData() {
 fetch("data.json")
   .then(r => r.json())
   .then(d => { data = d; render(); });
+}
 
 function render() {
   const q = document.getElementById("search").value.toLowerCase().trim();
