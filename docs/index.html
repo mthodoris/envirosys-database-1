@@ -144,12 +144,10 @@
   .inst-row {
     padding: .6rem 1rem;
     border-bottom: 1px solid var(--border);
-    cursor: pointer;
   }
   .inst-row:last-child { border-bottom: none; }
-  .inst-row:hover { background: var(--bg); }
 
-  .inst-top { display: flex; align-items: center; gap: .5rem; }
+  .inst-top { display: flex; align-items: center; gap: .5rem; margin-bottom: .4rem; }
   .tag {
     font-size: .72rem;
     font-weight: 700;
@@ -164,14 +162,13 @@
   .inst-sn    { font-size: .8rem; color: var(--muted); margin-left: auto; }
 
   .inst-detail {
-    display: none;
-    margin-top: .5rem;
     font-size: .82rem;
-    color: var(--muted);
-    line-height: 1.7;
+    line-height: 1.9;
   }
-  .inst-row.open .inst-detail { display: block; }
-  .inst-detail span { color: var(--text); font-weight: 500; }
+  .inst-detail table { border-collapse: collapse; width: 100%; }
+  .inst-detail td { padding: .1rem .4rem; }
+  .inst-detail td:first-child { color: var(--muted); width: 120px; }
+  .inst-detail td:last-child  { color: var(--text); font-weight: 500; }
 
   .no-instruments { padding: .6rem 1rem; font-size: .85rem; color: #94a3b8; }
   .empty { padding: 3rem; text-align: center; color: var(--muted); }
@@ -293,25 +290,23 @@ function stationCard(loc, s) {
 function instRow(station, idx, i) {
   const parts = [i.part1, i.part2, i.part3, i.part4].filter(Boolean);
   const rows = [
-    ["Installed", i.installed_date],
-    ["Cal. high", i.cal_high_date],
-    ["Cal. low",  i.cal_low_date],
+    ["Serial No.",  i.serial_number],
+    ["Installed",   i.installed_date],
+    ["Cal. high",   i.cal_high_date],
+    ["Cal. low",    i.cal_low_date],
     parts.length ? ["Parts", parts.join(", ")] : null,
-    ["Notes",     i.notes],
+    ["Notes",       i.notes],
   ].filter(r => r && r[1]);
 
-  const detail = rows.length
-    ? rows.map(([l, v]) => `${l}: <span>${esc(v)}</span>`).join("<br>")
-    : "No additional details.";
+  const detail = rows.map(([l, v]) => `<tr><td>${l}</td><td>${esc(v)}</td></tr>`).join("");
 
   return `
-    <div class="inst-row" id="i-${esc(station)}-${idx}" onclick="toggleInst('${esc(station)}',${idx})">
+    <div class="inst-row" id="i-${esc(station)}-${idx}">
       <div class="inst-top">
         <span class="tag tag-${esc(i.pollutant)}">${esc(i.pollutant)}</span>
         <span class="inst-model">${esc(i.model)}</span>
-        <span class="inst-sn">SN: ${esc(i.serial_number)}</span>
       </div>
-      <div class="inst-detail">${detail}</div>
+      <div class="inst-detail"><table>${detail}</table></div>
     </div>`;
 }
 
@@ -320,9 +315,6 @@ function toggleLoc(name) {
 }
 function toggleStation(name) {
   document.getElementById("s-" + name).classList.toggle("collapsed");
-}
-function toggleInst(station, idx) {
-  document.getElementById(`i-${station}-${idx}`).classList.toggle("open");
 }
 
 function esc(s) {
