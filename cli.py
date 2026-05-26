@@ -211,6 +211,86 @@ def list_stations(conn):
     print()
 
 
+def edit_station(conn):
+    hr()
+    print("EDIT STATION")
+    rows = conn.execute("""
+        SELECT s.id, s.name, l.name AS location, s.notes
+        FROM stations s
+        LEFT JOIN locations l ON l.id = s.location_id
+        ORDER BY s.name
+    """).fetchall()
+    if not rows:
+        print("  No stations yet.")
+        return
+    for i, r in enumerate(rows, 1):
+        print(f"    {i}. {r['name']}  ({r['location'] or '—'})")
+    while True:
+        raw = input(f"  Choose 1–{len(rows)}: ").strip()
+        if raw.isdigit() and 1 <= int(raw) <= len(rows):
+            s = rows[int(raw) - 1]
+            break
+        print("  Invalid choice.")
+
+    print("  (Press Enter to keep current value)\n")
+    new_name  = input(f"  Name  [{s['name']}]: ").strip() or s["name"]
+    new_notes = input(f"  Notes [{s['notes'] or ''}]: ").strip()
+    new_notes = new_notes if new_notes else s["notes"]
+
+    locs = conn.execute("SELECT * FROM locations ORDER BY name").fetchall()
+    print(f"\n  Location (current: {s['location'] or '—'}) — press Enter to keep:")
+    for i, l in enumerate(locs, 1):
+        print(f"    {i}. {l['name']}")
+    raw = input(f"  Choose 1–{len(locs)} or Enter to keep: ").strip()
+    if raw.isdigit() and 1 <= int(raw) <= len(locs):
+        new_loc_id = locs[int(raw) - 1]["id"]
+    else:
+        new_loc_id = conn.execute(
+            "SELECT location_id FROM stations WHERE id = ?", (s["id"],)
+        ).fetchone()[0]
+
+    try:
+        conn.execute(
+            "UPDATE stations SET name = ?, notes = ?, location_id = ? WHERE id = ?",
+            (new_name, new_notes, new_loc_id, s["id"]),
+        )
+        conn.commit()
+        print(f"  ✓ Station updated to '{new_name}'.")
+    except sqlite3.IntegrityError:
+        print(f"  A station named '{new_name}' already exists.")
+
+
+def remove_station(conn):
+    hr()
+    print("REMOVE STATION")
+    rows = conn.execute("""
+        SELECT s.id, s.name, l.name AS location
+        FROM stations s
+        LEFT JOIN locations l ON l.id = s.location_id
+        ORDER BY s.name
+    """).fetchall()
+    if not rows:
+        print("  No stations yet.")
+        return
+    for i, r in enumerate(rows, 1):
+        print(f"    {i}. {r['name']}  ({r['location'] or '—'})")
+    while True:
+        raw = input(f"  Choose 1–{len(rows)}: ").strip()
+        if raw.isdigit() and 1 <= int(raw) <= len(rows):
+            s = rows[int(raw) - 1]
+            break
+        print("  Invalid choice.")
+
+    confirm = input(f"  Delete '{s['name']}'? Its instruments will be unassigned. [y/N]: ").strip().lower()
+    if confirm != "y":
+        print("  Cancelled.")
+        return
+
+    conn.execute("DELETE FROM stations WHERE id = ?", (s["id"],))
+    conn.commit()
+    print(f"  ✓ Station '{s['name']}' removed.")
+
+
 # ── instruments ────────────────────────────────────────────────────────────────
 
 def add_instrument(conn):
@@ -460,6 +540,8 @@ MENU = [
     # ── stations ──
     ("List stations",                      list_stations),
     ("Add station",                        add_station),
+    ("Edit station",                       edit_station),
+    ("Remove station",                     remove_station),
     # ── instruments ──
     ("List instruments (detail view)",     list_instruments),
     ("Add instrument",                     add_instrument),
